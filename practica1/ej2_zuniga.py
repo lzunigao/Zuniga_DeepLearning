@@ -1,55 +1,54 @@
 #%%
+import sklearn
 from torchvision import datasets, transforms
-import ej1_zuniga
 import numpy as np
 import matplotlib.pyplot as plt
-import importlib
-importlib.reload(ej1_zuniga)
-from ej1_zuniga import NearestNeighbor
+# import importlib
+# import torch.nn as nn
+from torch import Tensor
 from sklearn import svm
-import torch.nn as nn
-# %%
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import log_loss
 
-class Image_classifier(NearestNeighbor):
+# %% Nearest Neighbor Classifier
+
+class NearestNeighbor_2:
     def __init__(self):
-        super().__init__()
+        self.X = None
+        self.Y = None        
 
-    def train(self,X, Y_true):
-        # Flatten the images
-        self.im_shape = X.shape[1:] # (28, 28)
-        self.X = np.reshape(X, (X.shape[0], np.prod(self.im_shape))) # N_images x (28*28)
-        self.Y = Y_true
+    def train(self, X_train, Y_train):
+        self.X = X_train.flatten(start_dim=1)
+        self.Y = Y_train
 
-class SVM_sklearn:
-    def __init__(self):
-        self.model = None
-        self.im_shape = None
-
-    def train(self, X, Y):
-        # Flatten images if needed
-        self.im_shape = X.shape[1:]
-        X_flat = np.reshape(X, (X.shape[0], np.prod(self.im_shape)))
-        self.model = svm.SVC(kernel='linear')
-        self.model.fit(X_flat, Y)
-
-    def predict(self, X):
-        X_flat = np.reshape(X, (X.shape[0], np.prod(self.im_shape)))
-        return self.model.predict(X_flat)
-    
-class SVM_classifier(nn.Module):
-    def __init__(self):
-        self.linear = nn.Linear(28*28, 10) # Example for MNIST
-        pass
+    def predict(self, X_test, k = 7):
         
-    def fit(self, X, Y):
-        pass
+        assert self.X is not None, 'Train the model first'
 
-    def predict(self, X):
-        pass
+        Yp = np.zeros(X_test.shape[0])
 
-    def loss_gradient(self, X, Y):
-        pass
+        for i, x in enumerate(X_test):
+            
+            norm = np.linalg.norm(np.abs(x.flatten() - self.X), axis=-1, ord=2)
+            
+            idx_sorted = np.argsort(norm)
+            k_nearest = idx_sorted[:k]
+            breakpoint()
+            Y_preds = self.Y[k_nearest]
+            # return the most common class label among the k nearest neighbors
+            Yp[i] = np.bincount(Y_preds).argmax()
+        Yp = np.array(Yp).astype(int)
+        return Yp
 
+
+
+
+#%%    
+print(svm.SVC(kernel='linear').get_params())
+    
+    
+
+# %%
 if __name__ == "__main__":        
     # Download and load MNIST dataset
     transform = transforms.Compose([transforms.ToTensor()])
@@ -62,73 +61,91 @@ if __name__ == "__main__":
     # %%
     print('Shapes: \n')
     print(f'MNIST train: {mnist_train.data.shape}, test: {mnist_test.data.shape}')
-    print(f'CIFAR-10 train: {cifar_train.data.shape}, test: {cifar_test.data.shape}')
+    print(f'MNIST train: {mnist_train.targets.shape}, test: {mnist_test.targets.shape}')
     # %%
+    # print(f'CIFAR-10 train: {cifar_train.data.shape}, test: {cifar_test.data.shape}')
+    # print(f'CIFAR-10 train: {len(cifar_train.targets)}, test: {len(cifar_test.targets)}')
+    
+    #%%
+    random_range = np.random.randint(low=0, high=mnist_train.data.shape[0], size=2000).astype(int)
+    x_train1 = Tensor(mnist_train.data)
+    y_train1 = np.array(mnist_train.targets)
 
-    random_range = np.random.choice(mnist_test.data.shape[0], size=20, replace=False)
+    x_test1 = Tensor(mnist_test.data)
+    y_test1 = np.array(mnist_test.targets)
 
-    x_train1 = mnist_train.data.numpy()
-    y_train1 = mnist_train.targets.numpy()
-    # x_test1 = mnist_test.data.numpy()[:20]
-    x_test1 = mnist_test.data.numpy()[random_range]
-    y_test1 = mnist_test.targets.numpy()[random_range]
+    plt.figure(figsize=(12,3))
+    for i, num in enumerate(x_test1[:5]):
+        plt.subplot(1, 5, i+1)
+        plt.imshow(num.squeeze(), cmap='gray')
+        plt.title(f'Label: {y_test1[i]}')
+        plt.axis('off')
 
     #%%
+    
+    
+    model = NearestNeighbor_2()
+    model.train(x_train1, y_train1)
 
-    x_train2 = np.array(cifar_train.data)
+    k_values = np.array(np.arange(start=1, stop=14, step=2))
+    acc1 = []    
+
+    for k_ in k_values:
+        y_pred1 = model.predict(x_test1[:20], k=k_)
+        
+        print(f'Predictions for k={k_}:', y_pred1)        
+        print(f'Targets for k={k_}:', y_test1[:20], '\n')        
+        acc1.append(100*np.sum((y_pred1 == y_test1[:20]))/20)
+      
+    
+    plt.plot(k_values, acc1, marker='o')
+    plt.title('MNIST Accuracy vs k-neighbors')
+    plt.xlabel('k')
+    plt.ylabel('Accuracy (%)')
+    plt.grid()
+
+#%%
+    names = {
+            0: 'airplane', 1: 'automobile', 2: 'bird', 3: 'cat', 4: 'deer',
+            5: 'dog', 6: 'frog', 7: 'horse', 8: 'ship', 9: 'truck'
+        }
+    random_range = np.random.randint(low=0, high=cifar_train.data.shape[0], size=2000).astype(int)
+    x_train2 = Tensor(cifar_train.data)
     y_train2 = np.array(cifar_train.targets)
-    x_test2 = np.array(cifar_test.data)[:20]
-    y_test2 = np.array(cifar_test.targets)[:20]
 
+    x_test2 = Tensor(cifar_test.data)
+    y_test2 = np.array(cifar_test.targets)
 
-    # %%
+    plt.figure(figsize=(12,3))
+    for i, num in enumerate(x_test2[:5]):
+        plt.subplot(1, 5, i+1)
+        plt.imshow(num.numpy().astype(np.uint8))
+        plt.title(f'Label: {names[y_test2[i]]}')
+        plt.axis('off')
 
-
-
-    # %%
-    model1 = Image_classifier()
-    model1.train(x_train1, y_train1)
-
-    model2 = Image_classifier()
-    model2.train(x_train2, y_train2)
-
+    plt.show()
     #%%
-    k_values = np.arange(1, 100, 10)
-    # acc1 = []
+    
+    model = NearestNeighbor_2()
+    model.train(x_train2, y_train2)
+
+    k_values = np.array(np.arange(start=1, stop=14, step=2))
     acc2 = []
 
-    for k in k_values:
-        # y_pred1 = model1.predict(x_test1, k=k)
-        # accuracy1 = np.mean(y_pred1 == y_test1)
-        # print(f'k={k}: Accuracy on MNIST: {accuracy1*100:.1f}%')
-        # acc1.append(accuracy1)
+    for k_ in k_values:
+        y_pred2 = model.predict(x_test2[:20], k=k_)
 
-        y_pred2 = model2.predict(x_test2, k=k)
-        accuracy2 = np.mean(y_pred2 == y_test2)
-        print(f'k={k}: Accuracy on CIFAR-10: {accuracy2*100:.1f}%')
-        acc2.append(accuracy2)
+        # print(f'Predictions for k={k_}:', y_pred2)
+        # print(f'Targets for k={k_}:', y_test2[:20], '\n')
+        acc2.append(100*np.sum((y_pred2 == y_test2[:20]))/20)
 
-    #%%
-    fig, ax = plt.subplots(2,1, figsize=(8,10))
-    ax[0].plot(np.arange(1, 51, 10), np.array(acc1)*100, marker='o')
-    ax[0].set_title('MNIST Accuracy vs k-neighbors')
-    ax[0].set_xlabel('k')
-    ax[0].set_ylabel('Accuracy (%)')
-    ax[0].grid()
-
-    ax[1].plot(k_values, np.array(acc2)*100, marker='o', color='orange')
-    ax[1].set_title('CIFAR-10 Accuracy vs k-neighbors')
-    ax[1].set_xlabel('k')
-    ax[1].set_ylabel('Accuracy (%)')
-    ax[1].grid()
-    plt.savefig('ej2_accuracy_plots.png',dpi=300)
-
+    plt.plot(k_values, acc2, marker='o')
+    plt.title('CIFAR-10 Accuracy vs k-neighbors')
+    plt.xlabel('k')
+    plt.ylabel('Accuracy (%)')
+    plt.grid()
     # %%
 
     # %%
-    svm_model = SVM_classifier()
-    svm_model.train(x_train1, y_train1)
-# %%
-    y_pred1 = svm_model.predict(x_test1)
-    accuracy1 = np.mean(y_pred1 == y_test1)
-    print(f'SVM Accuracy on MNIST: {accuracy1*100:.1f}%')
+    #%% Support vector machine
+    
