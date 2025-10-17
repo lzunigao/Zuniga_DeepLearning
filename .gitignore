@@ -206,5 +206,30 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-#Datasest like MNIST
+# Datasets like MNIST
 data/
+
+# LaTeX auxiliary files
+*.aux
+*.lof
+*.log
+*.lot
+*.fls
+*.out
+*.toc
+*.fmt
+*.fot
+*.cb
+*.cb2
+.*.lb
+*.synctex.gz
+*.synctex(busy)
+*.pdfsync
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+*.fdb_latexmk
+*.nav
+*.snm
+*.vrb
