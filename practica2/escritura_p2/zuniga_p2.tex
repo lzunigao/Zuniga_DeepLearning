@@ -1,0 +1,235 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{graphics}
+\usepackage[%  
+    colorlinks=true,
+    pdfborder={0 0 0},
+    linkcolor=red
+]{hyperref}
+\geometry{margin=2.5cm}
+
+\title{Informe de Trabajo Práctico 2}
+\author{Aprendizaje Profundo con aplicación a Visión Artificial \\
+Laura Zúñiga Osorio}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\paragraph{1. Funciones de activación y gradientes.}
+
+Se consideran las entradas y pesos:
+
+\[
+x_1 = 2, \quad x_2 = 8, \quad w_1 = 1.45, \quad w_2 = -0.35, \quad b = -4
+\]
+
+La entrada total a la neurona es:
+
+\[
+x = w_1 x_1 + w_2 x_2 + b
+\]
+
+\[
+x = (1.45)(2) + (-0.35)(8) - 4 = 2.90 - 2.80 - 4 = -3.90
+\]
+
+Por lo tanto:
+
+\[
+\boxed{x = -3.900}
+\]
+
+A continuación se calculan las funciones de activación $f(x)$ y sus gradientes $f'(x)$, manteniendo tres decimales.
+
+%--------------------------------------------------
+\paragraph{a. Función Sigmoide}
+
+\[
+f(x) = \frac{1}{1 + e^{-x}} = \frac{1}{1 + e^{3.9}}
+\]
+
+\[
+e^{3.9} \approx 49.402
+\]
+
+\[
+f(x) = \frac{1}{50.402} = 0.020
+\]
+
+\[
+f'(x) = f(x)\big(1 - f(x)\big) = 0.020(1 - 0.020) = 0.020
+\]
+
+\[
+\boxed{f(x) = 0.020, \quad f'(x) = 0.020}
+\]
+
+%--------------------------------------------------
+\paragraph{b. Función Tangente Hiperbólica}
+
+\[
+f(x) = \tanh(-3.9)
+\]
+
+\[
+\tanh(3.9) \approx 0.999
+\]
+
+\[
+f(x) = -0.999
+\]
+
+\[
+f'(x) = 1 - \tanh^2(x) = 1 - (-0.999)^2 = 1 - 0.998 = 0.002
+\]
+
+\[
+\boxed{f(x) = -0.999, \quad f'(x) = 0.002}
+\]
+
+%--------------------------------------------------
+\paragraph{c. Función ELU (Exponential Linear Unit)}
+
+La definición empleada es:
+
+\[
+f(x) =
+\begin{cases}
+x, & \text{si } x < 0 \\
+\alpha (e^{x} - 1), & \text{si } x > 0
+\end{cases}
+\]
+
+Para $\alpha = 1$ y $x = -3.9 < 0$:
+
+\[
+f(x) = x = -3.9
+\]
+
+\[
+f'(x) = 1
+\]
+
+\[
+\boxed{f(x) = -3.900, \quad f'(x) = 1.000}
+\]
+
+%--------------------------------------------------
+\paragraph{d. Función Leaky ReLU}
+
+Se define como:
+
+\[
+f(x) = \max\left(\frac{x}{10},\, x\right)
+\]
+
+Para $x = -3.9$ se cumple $\frac{x}{10} = -0.39 < x$, por lo tanto:
+
+\[
+f(x) = -0.39
+\]
+
+\[
+f'(x) = \frac{1}{10} = 0.1
+\]
+
+\[
+\boxed{f(x) = -0.390, \quad f'(x) = 0.100}
+\]
+
+
+\vspace{0.5em}
+
+
+\paragraph{2. Perceptrón con dos neuronas.} Los datos del problema son:
+
+\[
+\mathbf{x} = (x_1,x_2)=(-3.1,\;1.5), \qquad
+W=\begin{bmatrix}-0.2 & 2 \\[4pt] -0.5 & -0.3\end{bmatrix}, \qquad
+b_1=-4,\; b_2=-1.
+\]
+
+\paragraph{Forward pass}
+
+Entrada a la función sigmoide:
+\[
+\begin{aligned}
+z_1 &= w_{11}x_1 + w_{12}x_2 + b_1 = (-0.2)(-3.1) + (2)(1.5) + (-4) = -0.380,\\[4pt]
+z_2 &= w_{21}x_1 + w_{22}x_2 + b_2 = (-0.5)(-3.1) + (-0.3)(1.5) + (-1) = 0.100.
+\end{aligned}
+\]
+
+Funciones activación (sigmoide):
+\[
+a_k =\frac{1}{1+e^{-z_k}}
+\quad \to \quad
+a_1 =  0.406, ~
+a_2 =  0.525.
+\]
+
+Loss:
+\[
+L = \tfrac{1}{2}\big(a_1^2 + a_2^2\big) = 0.220.
+\]
+
+\paragraph{Backpropagation}
+
+Derivadas de salida respecto al costo:
+\[
+\frac{\partial C}{\partial a_1} = a_1 - t_1 = a_1 = 0.406,\qquad
+\frac{\partial C}{\partial a_2} = a_2 - t_2 = a_2 = 0.525.
+\]
+
+Derivada de la sigmoide:
+\[
+\sigma'(z_k) = a_k(1-a_k).
+\]
+Valores:
+\[
+\sigma'(z_1) = 0.406(1-0.406)=0.098,\qquad
+\sigma'(z_2) = 0.525(1-0.525)=0.131.
+\]
+
+Gradientes de \(C\) respecto a las pre-activaciones \(z_k\):
+\[
+\frac{\partial C}{\partial z_k} = \frac{\partial C}{\partial a_k}\,\sigma'(z_k).
+\]
+Números:
+\[
+\frac{\partial C}{\partial z_1} = 0.406\cdot 0.098 = 0.098,\qquad
+\frac{\partial C}{\partial z_2} = 0.525\cdot 0.131 = 0.131.
+\]
+
+Gradientes respecto a pesos y sesgos (regla de la cadena):
+\[
+\frac{\partial C}{\partial w_{ij}} = \frac{\partial C}{\partial z_i}\, x_j, \qquad
+\frac{\partial C}{\partial b_i} = \frac{\partial C}{\partial z_i}.
+\]
+
+Valores (redondeados a tres decimales):
+
+Para la neurona 1 (fila 1 de \(W\)):
+\[
+\begin{aligned}
+\frac{\partial C}{\partial w_{11}} &= 0.098\cdot x_1 = 0.098\cdot(-3.1) = -0.304,\\[4pt]
+\frac{\partial C}{\partial w_{12}} &= 0.098\cdot x_2 = 0.098\cdot 1.5 = 0.147,\\[4pt]
+\frac{\partial C}{\partial b_1} &= 0.098.
+\end{aligned}
+\]
+
+Para la neurona 2 (fila 2 de \(W\)):
+\[
+\begin{aligned}
+\frac{\partial C}{\partial w_{21}} &= 0.131\cdot x_1 = 0.131\cdot(-3.1) = -0.406,\\[4pt]
+\frac{\partial C}{\partial w_{22}} &= 0.131\cdot x_2 = 0.131\cdot 1.5 = 0.196,\\[4pt]
+\frac{\partial C}{\partial b_2} &= 0.131.
+\end{aligned}
+\]
+
+
+\end{document}
