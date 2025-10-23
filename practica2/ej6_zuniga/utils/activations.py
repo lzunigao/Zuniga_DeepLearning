@@ -11,3 +11,13 @@ def tanh(x):
 def sigmoid(x):
     return 1 / (1 + e**(-x))
 
+def linear_bounded(x): # las agrego yo
+    if x<-1:
+        return -1
+    elif x>1:
+        return 1
+    else:
+        return x
+    
+def linear_unbounded(x):
+    return x
