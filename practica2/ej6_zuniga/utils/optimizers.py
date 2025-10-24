@@ -3,12 +3,12 @@
 #SGD: clase que implementa el optimizador stochastic gradient descent
 
 class Optimizador:
-    def __init__(self, params, learning_rate):
+    def __init__(self, learning_rate, params, loss_fct):
         self.params = params
         self.learning_rate = learning_rate
-        self.grads = [0 for _ in params]
+        self.loss_fct = loss_fct
 
-    def step(self, *args, **kwargs):
+    def step(self):
         for i, param in enumerate(self.params):
             param -= self.learning_rate * self.grads[i]
         self.zero_grad()
@@ -19,6 +19,5 @@ class Optimizador:
 
 
 class SGD(Optimizador): # recorre aleatoriamente los datos y actualiza los pesos
-    def __init__(self, params, learning_rate=0.01):
-        super().__init__(params, learning_rate)
+    pass
     

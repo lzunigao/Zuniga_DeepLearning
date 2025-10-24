@@ -1,47 +1,63 @@
 import layers
-import activations
 import numpy as np
+import activations
+import optimizers
 
 class Network: # Red neuronal que contiene múltiples capas
     def __init__(self):
         raise NotImplementedError("La clase Network debe especificar su propia arquitectura")
 
-    def forward(self, x):
-        raise NotImplementedError("La clase Network debe implementar su propio método forward")
-    
-    def train(self):
-        # permite hacer backpropagation
-        pass
-    def test(self):
-        # permite hacer inferencia
-        pass
+    def add_layer(self, input_shape, output_shape, activation):
+        if not hasattr(self, 'layers'):
+            self.layers = []
+        layer = layers.DenseLayer(input_shape, output_shape, activation)
+        self.layers.append(layer)
 
-    def backpropagation(self):
-        # calcular gradientes y actualizar pesos
-        pass
-    
+    def compile(self, learning_rate, optimizer): # ... parámetros como learning rate, qué más?
+        self.learning_rate = learning_rate
+        self.optimizer = optimizer
+
+    def forward(self, x):
+        raise NotImplementedError("El método forward debe ser implementado en la subclase")
+
+    def fit(self, x, y, epochs, ):
+        for epoch in range(epochs):            
+            output = self.forward(x)
+            # Compute loss (mean squared error)
+            loss = np.mean((output - y) ** 2)
+            # Backward pass
+            grad = 2 * (output - y) / y.shape[0]
+            for layer in reversed(self.layers):
+                
+                grad = layer.backward(grad, learning_rate=0.01)
+                
+            if epoch % 100 == 0:
+                print(f"Epoch {epoch}, Loss: {loss}")
+
+    def predict(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+        
 class XOR1(Network):
     def __init__(self):        
-        self.input = layers.InputLayer(2)
-        self.hidden = layers.DenseLayer(2, 2, activation=activations.tanh)
-        self.output = layers.DenseLayer(2, 1, activation=activations.tanh)
-    
+        self.add_layer(2, 2, activations.tanh)
+        self.add_layer(2, 1, activations.tanh)
     def forward(self, x):
-        x = self.input(x)
-        x = self.hidden(x)
-        x = self.output(x)
+        for layer in self.layers:
+            x = layer(x)
         return x
+  
 
     
 class XOR2(Network):
     def __init__(self):
-        super().__init__()
-        self.input = layers.InputLayer(2)
-        self.hidden = layers.DenseLayer(2, 1, activation=activations.tanh)
-        self.output = layers.DenseLayer(3, 1, activation=activations.tanh)
-    def forward(self, x):
-        x_in = self.input(x)
-        x_hidden = self.hidden(x_in)
-        x_concat = np.concatenate([x_in, x_hidden], axis=1)
-        x_out = self.output(x_concat)
+        self.add_layer(2, 1, activations.tanh)
+        self.add_layer(3, 1, activations.tanh)
+    def forward(self, x): # me interesa cambiar la arquitectura
+        x_hid = self.layers[0](x)
+        x_concat = np.concatenate([x, x_hid], axis=1)
+        x_out = self.layers[1](x_concat)
         return x_out
+    
+#%%
