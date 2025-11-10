@@ -1,0 +1,206 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{graphics}
+\usepackage{listings}
+\usepackage{xcolor}  % for coloring
+\renewcommand{\lstlistingname}{Código}
+\renewcommand{\lstlistlistingname}{Índice de códigos}
+
+\lstset{
+  language=python,                   % Idioma del código
+  basicstyle=\ttfamily\small,  % Fuente monoespaciada pequeña
+  keywordstyle=\color{blue}\bfseries, % Palabras clave en azul y negrita
+  commentstyle=\color{gray},   % Comentarios en gris
+  stringstyle=\color{red},     % Cadenas en rojo
+  numbers=left,                % Numerar líneas a la izquierda
+  numberstyle=\tiny,           % Tamaño de los números de línea
+  numbersep=5pt,               % Separación de los números
+  backgroundcolor=\color{white}, % Fondo blanco
+  frame=single,                % Marco alrededor del código
+  breaklines=true,             % Romper líneas largas
+  captionpos=b,                % Colocar el título debajo del código
+  literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1 {ñ}{{\~n}}1 {Ñ}{{\~N}}1, % Soporte para caracteres especiales
+  extendedchars=true,
+  columns=flexible,
+  inputencoding=utf8
+}
+\usepackage[%  
+    colorlinks=true,
+    pdfborder={0 0 0},
+    linkcolor=red
+]{hyperref}
+\geometry{margin=2.5cm}
+
+\title{Informe de Trabajo Práctico 3}
+\author{Aprendizaje Profundo con aplicación a Visión Artificial \\
+Laura Zúñiga Osorio}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Keras: CNN para clasificación de MNIST}
+
+En este ejercicio entrenamos una red neuronal convolucional (CNN) con el fin de clasificar la base de datos MNIST, utilizando \texttt{tensorflow}.
+En primer lugar, cargamos los datos junto con sus etiquetas y aplicamos el siguiente preprocesamiento:
+
+\begin{itemize}
+    \item Separamos entre conjuntos de entrenamiento y evaluación, con $60000$ y $10000$ pares de imagen-anotación, respectivamente.
+    \item Convertir las imágenes a \texttt{float32} y las dividimos entre $255$ para normalizarlas al rango $[0,1]$.
+    \item Agregamos una dimensión a los vectores de las imágenes para especificar el número de canales igual a 1.
+    \item Convertir las clases a vectores del tipo \texttt{one\_hot}.
+\end{itemize}
+
+En la figura \ref{ej1:ejemplo-mnist} se muestran algunas imágenes de entrenamiento con sus respectivas etiquetas.
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.6\textwidth]
+    {ej1_mnist.png}    
+    \caption{Ejemplos de entrenamiento de la base MNIST con sus respectivas etiquetas.}
+    \label{ej1:ejemplo-mnist}
+\end{figure}
+
+El modelo propuesto para la CNN se definió utilizando los módulos de \newline \texttt{keras.Sequential()}. Podemos obtener el detalle de la arquitectura a través del comando \texttt{model.summary()}, como se muestra en la figura \ref{ej1:arch}. 
+
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.7\textwidth]
+    {ej1_architecture.png}    
+    \caption{Arquitectura de CNN (keras) utilizada para clasificar base de datos MNIST.}
+    \label{ej1:arch}
+\end{figure}
+
+El entrenamiento se realizó por 10 épocas, seteando batches de 32 elementos, definiendo como criterio de pérdida a \texttt{CategoricalCrossentropy} y usando el optimizador Adam con tasa de aprendizaje $10^{-3}$.
+La evolución de estas métricas se muestra a través de las curvas de Loss y Accuracy como función de las épocas en la figura \ref{ej1:evol}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.45\textwidth]{ej1_loss.png}
+    \quad
+    \includegraphics[width=0.45\textwidth]{ej1_acc.png}
+    \caption{Evolución de métricas en el entrenamiento de CNN (keras) para clasificación de MNIST.}
+    \label{ej1:evol}
+\end{figure}
+
+Los scores sobre el conjunto de test se calcularon utilizando la función \texttt{model.evaluate()}, obteniendo una loss de $0.0805$ y una accuracy de $0.9768$.
+
+\section{Pytorch: CNN para clasificación de MNIST}
+
+Este ejercicio tiene el mismo objetivo que el anterior, esta vez utilizando los módulos de \texttt{Pytorch}.
+Los datos se procesan automáticamente usando la librería \texttt{torchvision.datasets}, por lo que solo resta definir la arquitectura. Esta se define como una clase heredada de \texttt{nn.Module}, donde instanciamos las capas con sus dimensiones y definimos la interacción entre ellas en el \texttt{forward}. El siguiente cuadro incluye el código de construcción de la red ``Net''.
+
+
+% # use listings
+\begin{lstlisting}[language=python]
+class Net(torch.nn.Module):
+  def __init__(self):
+    super().__init__() 
+    self.conv1 = torch.nn.Conv2d(
+        in_channels=1, 
+        out_channels=32, 
+        kernel_size=3, 
+        stride=1)
+    self.conv2 = torch.nn.Conv2d(
+        in_channels=32, 
+        out_channels=16, 
+        kernel_size=3, 
+        stride=1)
+    self.linear = torch.nn.Linear(
+        in_features=6*6*16, 
+        out_features=10)
+  def forward(self, input):
+    x = self.conv1(input)
+    x = torch.nn.functional.relu(x)
+    x = torch.nn.functional.max_pool2d(
+        x, 
+        kernel_size=2, 
+        stride=2)
+    x = self.conv2(x)
+    x = torch.nn.functional.relu(x)
+    x = torch.nn.functional.max_pool2d(
+        x, 
+        kernel_size=2, 
+        stride=2)
+    x = torch.flatten(x, start_dim=1)
+    x = self.linear(x)
+    x = torch.nn.functional.log_softmax(x, dim=0)
+    return x
+\end{lstlisting}
+
+
+Entrenamos durante 50 épocas, seteando batches de 64 elementos, utilizando el criterio \texttt{CrossEntropyLoss} y el optimizador Adam con tasa de aprendizaje $10^{-3}$. La evolución de la loss y la accuracy se muestran en la figura \ref{ej2:evol}.
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.45\textwidth]{ej2_loss.png}
+    \quad
+    \includegraphics[width=0.45\textwidth]{ej2_acc.png}
+    \caption{Evolución de métricas de aprendizaje de CNN (torch) utilizada para clasificación de MNIST.}
+    \label{ej2:evol}
+\end{figure}
+
+La evaluación sobre el conjunto de test arroja una accuracy global de $0.9847$, y podemos visualizar de forma más completa los resultados por clase mediante la matriz de confusión de la figura \ref{ej2:confusion}. Esta se obtuvo utilizando la librería \texttt{Sklearn}.
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.7\textwidth]{ej2_confusion.png}
+\caption{Matriz de confusión sobre el conjunto de test de MNIST para entrenamiento de CNN (torch).}
+\label{ej2:confusion}
+\end{figure}
+\newpage
+\section{Segmentación con U-Net}
+
+En esta ocasión implementamos una red del tipo U-Net para llevar a cabo una tarea de segmentación semántica sobre la base de datos Oxford Pets. Esta contiene imágenes de 
+37 clases (razas) y un total de 7349 imágenes, cada una acompañada de su máscara de segmentación a nivel de píxel.
+Solo fue posible cargar 500 datos de entrenamiento debido a las limitaciones de recursos computacionales.
+
+Para el preprocesamiento se aplicaron los siguientes pasos:
+\begin{itemize}
+    \item Redimensionar las imágenes y máscaras a $224\times224$ píxeles.
+    \item Normalizar las imágenes al rango $[0,1]$ y convertirlas a \texttt{float32}.
+    \item Convertir las máscaras a formato binario por clase y aplicar \texttt{one\_hot} cuando fue necesario.
+\end{itemize}
+
+Un ejemplo de las imágenes (consultado en internet) se muestra en la figura \ref{ej3:seg}.
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.6\textwidth]{ej3_seg.jpeg}
+    \caption{Ejemplo de entrenamiento de base de datos Oxford Pets.}
+    \label{ej3:seg}
+    
+\end{figure}
+
+La arquitectura implementada corresponde a un U-Net clásico, esta se ilustra en el diagrama de la figura \ref{ej3:arch}.
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.7\textwidth]{ej3_arch.png}
+    \caption{Diagrama de la arquitectura U-Net utilizada para segmentación semántica sobre la base de datos de Oxford Pets.}
+    \label{ej3:arch}    
+\end{figure}
+
+Como criterio de pérdida se utilizó \texttt{Sparse\_Categorical\_CrossEntropy}
+El optimizador utilizado fue Adam con tasa de aprendizaje $10^{-3}$, batch size $32$ y entrenamiento por 10 épocas.
+
+
+La accuracy media alcanzada fue de $0.45$ y la loss de $0.95$.
+
+% \begin{figure}[!ht]
+%         \centering
+%         \includegraphics[width=0.45\textwidth]{unet_loss.png}
+%         \quad
+%         \includegraphics[width=0.45\textwidth]{unet_iou.png}
+%         \caption{Evolución de la pérdida y del IoU en entrenamiento/validación.}
+%         \label{unet:curves}
+% \end{figure}
+
+
+
+\end{document}
